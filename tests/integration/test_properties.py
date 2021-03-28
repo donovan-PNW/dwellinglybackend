@@ -1,8 +1,6 @@
 import pytest
 import json
 from models.property import PropertyModel
-from models.user import UserModel
-from models.tenant import TenantModel
 
 
 def test_get_properties(client, test_database):
@@ -38,31 +36,25 @@ def test_post_property(
     assert response.status_code == 400
 
 
-def test_get_property_by_id(client, auth_headers, test_database):
-    """The get property by name returns a successful response code."""
-    response = client.get("/api/properties/1", headers=auth_headers["admin"])
-    property_info = response.get_json()
-    user_json = UserModel.find_by_id(5).json()
-    assert response.status_code == 200
-    assert property_info["name"] == "test1"
-    assert property_info["address"] == "123 NE FLanders St"
-    assert property_info["num_units"] == 5
-    assert property_info["city"] == "Portland"
-    assert property_info["state"] == "OR"
-    assert property_info["zipcode"] == "97207"
-    assert property_info["propertyManager"] == [user_json]
-    assert property_info["propertyManagerName"] == ["Gray Pouponn"]
-    assert property_info["archived"] == 0
-    assert property_info["tenants"] == [TenantModel.find_by_id(1).json()]
+@pytest.mark.usefixtures("client_class", "empty_test_db")
+class TestPropertyRequestsByID:
+    def setup(self):
+        self.endpoint = "/api/properties"
 
-    """
-    The server responds with an error if the URL contains a non-existent property id
-    """
-    responseBadPropertyName = client.get(
-        "/api/properties/23", headers=auth_headers["admin"]
-    )
-    assert responseBadPropertyName == 404
-    assert responseBadPropertyName.json == {"message": "Property not found"}
+    def test_get_property_by_id(self, create_lease, valid_header):
+        """The get property by name returns a successful response code."""
+        lease = create_lease()
+        property = lease.property
+        response = self.client.get(f"{self.endpoint}/1", headers=valid_header)
+        property_info = response.get_json()
+        assert property_info == property.json()
+
+        """
+        The server responds with an error if the URL contains a non-existent property id
+        """
+        response_bad_id = self.client.get(f"{self.endpoint}/23", headers=valid_header)
+        assert response_bad_id == 404
+        assert response_bad_id.json == {"message": "Property not found"}
 
 
 def test_archive_property_by_id(client, auth_headers, create_property, test_database):
