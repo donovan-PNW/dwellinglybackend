@@ -80,7 +80,6 @@ class Property(Resource):
     def get(self, id):
         property = PropertyModel.find(id)
         property_json = property.json()
-        property_json["tenants"] = property.tenants()
         return property_json
 
     @admin_required

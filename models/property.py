@@ -37,6 +37,7 @@ class PropertyModel(BaseModel):
             "city": self.city,
             "state": self.state,
             "zipcode": self.zipcode,
+            "tenants": self.tenants(),
             "propertyManager": [user.json() for user in self.managers]
             if self.managers
             else None,
@@ -50,7 +51,8 @@ class PropertyModel(BaseModel):
     def tenants(self):
         tenants = []
         for lease in self.leases:
-            tenants.append(lease.tenant.json())
+            if lease.is_active():
+                tenants.append(lease.tenant.json())
         return tenants
 
     @classmethod
